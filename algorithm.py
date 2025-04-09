@@ -25,9 +25,9 @@ def eval_keras(individual, ke):
     ###print("hasf: ", metrics_names)
     
     ###CAMBIO de accuracy a compile_metrics
-    accuracy_training = scores_training[metrics_names.index("accuracy")]
-    accuracy_validation = scores_validation[metrics_names.index("accuracy")]
-    accuracy_test = scores_test[metrics_names.index("accuracy")]
+    accuracy_training = scores_training[metrics_names.index("compile_metrics")]
+    accuracy_validation = scores_validation[metrics_names.index("compile_metrics")]
+    accuracy_test = scores_test[metrics_names.index("compile_metrics")]
 
     number_layers = individual.global_attributes.number_layers
 
@@ -85,6 +85,14 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
 
     prev_avg = record["avg"]
 
+    ########
+    #units (Dense), rate (Dropout), filters (Conv2D), kernel_size (Conv2D), 
+        #pool_size (MaxPooling2D), strides (MaxPooling2D)
+    const_params_min = [50, 0.2, 5, 3, 2, 1]
+    const_params_max = [350, 0.6, 50, 7, 6, 6]
+    const_params_jump = [50, 0.2, 10, 2, 1, 1]
+    ########
+
     num_generations_no_changes = 0
     print("Size of the population is: " + str(len(population)))
     # Begin the generational process
@@ -132,6 +140,89 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
 
         # Select the next generation population
         population[:] = toolbox.select(population + offspring, mu)
+
+        ########
+        if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
+            #best_model = toolbox.select(population, 1)
+        
+            best_model_struct = toolbox.clone(population[0].net_struct)
+            num_layers = len(best_model_struct)
+
+            params_list = []
+            params_min_list = []
+            params_max_list = []
+            params_jump_list = []
+
+            for i in range(num_layers):
+                layer = best_model_struct[i]
+                layer_type = layer.type
+
+                if layer_type == "Dense":
+                    params_list.append(layer.parameters["units"])
+                    params_min_list.append(const_params_min[0])
+                    params_max_list.append(const_params_max[0])
+                    params_jump_list.append(const_params_jump[0])
+
+                elif layer_type == "Dropout":
+                    params_list.append(layer.parameters["rate"])
+                    params_min_list.append(const_params_min[1])
+                    params_max_list.append(const_params_max[1])
+                    params_jump_list.append(const_params_jump[1])
+
+                elif layer_type == "Convolution2D":
+                    params_list.append(layer.parameters["filters"])
+                    params_min_list.append(const_params_min[2])
+                    params_max_list.append(const_params_max[2])
+                    params_jump_list.append(const_params_jump[2])
+
+                    params_list.append(layer.parameters["kernel_size"])
+                    params_min_list.append(const_params_min[3])
+                    params_max_list.append(const_params_max[3])
+                    params_jump_list.append(const_params_jump[3])
+
+                elif layer_type == "MaxPooling2D":
+                    if layer.parameters["pool_size"][0] < layer.parameters["pool_size"][1]:
+                        params_list.append(layer.parameters["pool_size"][0])
+                    else:
+                        params_list.append(layer.parameters["pool_size"][1])
+
+                    params_min_list.append(const_params_min[4])
+                    params_max_list.append(const_params_max[4])
+                    params_jump_list.append(const_params_jump[4])
+
+                    if layer.parameters["strides"][0] == "null":
+                        stride_0 = 1
+                    else:
+                        stride_0 = layer.parameters["strides"][0]
+                    
+                    if layer.parameters["strides"][1] == "null":
+                        stride_1 = 1
+                    else:
+                        stride_1 = layer.parameters["strides"][1]
+
+                    #Creo que stride.x y stride.y son siempre iguales
+                    if stride_0 < stride_1:
+                        params_list.append(stride_0)
+                    else:
+                        params_list.append(stride_1)
+
+                    params_min_list.append(const_params_min[5])
+                    params_max_list.append(const_params_max[5])
+                    params_jump_list.append(const_params_jump[5])
+
+            #print("\n\n")
+            #print(best_model_struct)
+            #print("Params_list:", params_list)
+            #print("Max:", params_max_list)
+            #print("Min:", params_min_list)
+            #print("Jump:", params_jump_list)
+            #print("\n\n")
+
+
+            
+
+
+        ########
 
         # Update the statistics with the new population
         record = stats.compile(population) if stats is not None else {}

@@ -26,23 +26,6 @@ import tensorflow as tf
 
 tf.config.set_visible_devices([], 'GPU')
 
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    print(f"Se ha detectado una GPU: {gpus}")  # Corrección en la impresión
-
-    # Configura el crecimiento de memoria dinámico para evitar que use toda la RAM de golpe
-    #tf.config.experimental.set_memory_growth(gpus[0], True)
-
-    # Limita la memoria de la GPU a 4GB
-    #tf.config.set_logical_device_configuration(
-     #   gpus[0],
-     #   [tf.config.LogicalDeviceConfiguration(memory_limit=4096)]
-    #)
-
-else:
-    print("No se ha detectado ninguna GPU, se usará CPU.")
-
-
 class KerasExecutor:
     # The number of neurons in the first and last layer included in network-structure is ommited.
     def __init__(self, dataset, test_size, metrics, early_stopping_patience, loss, first_data_column=1):

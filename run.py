@@ -34,7 +34,7 @@ EXPERIMENTS:
 - 3: CIFAR10-G
 """
 
-EXPERIMENT = 0
+EXPERIMENT = 3
 
 #############################################
 # EXTRA CLASSES DEFINITION
@@ -77,63 +77,11 @@ def mnist_data_builder():
         "DESCR": "mldata.org dataset: mnist-original",
     }
 
-    #print(dataset)
-    #print("\n\n")
-    #print(dataset["data"])
-    #print("\n\n")
-    #print(dataset["target"])
-    #print("\n\n")
-    #print(dataset["data"][1])
-
     return dataset
 
 
 ###########################
 def horsehumanG_data_builder():
-    
-    horsehumanG_path = "./horse-or-human"
-
-    # Cargar imágenes y etiquetas
-    dataset_dir = os.path.join(os.path.dirname(horsehumanG_path), 'horse-or-human')
-    classes = sorted(os.listdir(dataset_dir))  # Clases: ['horses', 'humans']
-    
-    images = []
-    labels = []
-    
-    for label, class_name in enumerate(classes):
-        class_dir = os.path.join(dataset_dir, class_name)
-        for img_name in os.listdir(class_dir):
-            img_path = os.path.join(class_dir, img_name)
-            
-            # Cargar imagen en escala de grises
-            img = load_img(img_path, color_mode="grayscale", target_size=(64,64)) ###Original 300x300
-            img_array = img_to_array(img)
-            
-            images.append(img_array)
-            labels.append(label)
-    
-    # Convertir listas a arrays numpy
-    images = numpy.array(images).reshape(len(images), -1)  # Aplanar imágenes
-    labels = numpy.array(labels)
-    
-    # Guardar en archivo .mat
-    mat_data = {"data": images, "target": labels}
-    scipy.io.savemat("horsehumanG.mat", mat_data)
-    
-    print("Dataset guardado como horsehumanG.mat")
-    
-    #dataset = mat_data
-
-    #print(dataset)
-    #print("\n\n")
-    #print(dataset["data"])
-    #print("\n\n")
-    #print(dataset["target"])
-    #print("\n\n")
-    #print(dataset["data"][1])
-
-    
-    #return mat_data
 
     horsehumanG_path = "./horsehumanG.mat"
     horsehumanG_raw = loadmat(horsehumanG_path)
@@ -144,52 +92,12 @@ def horsehumanG_data_builder():
         "DESCR": "",
     }
 
-    #print(dataset)
-    #print("\n\n")
-    #print(dataset["data"])
-    #print("\n\n")
-    #print(dataset["target"])
-    #print("\n\n")
-    #print(dataset["data"][1])
-
     return dataset
-
 ###########################
 
 
 ###########################
 def vangoghG_data_builder():
-    
-    vangoghG_path = "./vangogh-or-photo"
-
-    # Cargar imágenes y etiquetas
-    dataset_dir = os.path.join(os.path.dirname(vangoghG_path), 'vangogh-or-photo')
-    classes = sorted(os.listdir(dataset_dir))  # Clases: ['vangogh', 'photo']
-    
-    images = []
-    labels = []
-    
-    for label, class_name in enumerate(classes):
-        class_dir = os.path.join(dataset_dir, class_name)
-        for img_name in os.listdir(class_dir):
-            img_path = os.path.join(class_dir, img_name)
-            
-            # Cargar imagen en escala de grises
-            img = load_img(img_path, color_mode="grayscale", target_size=(28,28)) ###Original 256x256
-            img_array = img_to_array(img)
-            
-            images.append(img_array)
-            labels.append(label)
-    
-    # Convertir listas a arrays numpy
-    images = numpy.array(images).reshape(len(images), -1)  # Aplanar imágenes
-    labels = numpy.array(labels)
-    
-    # Guardar en archivo .mat
-    mat_data = {"data": images, "target": labels}
-    scipy.io.savemat("vangoghG.mat", mat_data)
-    
-    print("Dataset guardado como vangoghG.mat")
 
     vangoghG_path = "./vangoghG.mat"
     vangoghG_raw = loadmat(vangoghG_path)
@@ -200,11 +108,11 @@ def vangoghG_data_builder():
         "DESCR": "",
     }
 
-
     return dataset
 ###########################
 
-#############################
+
+###########################
 def cifar10G_data_builder():
 
     cifar10 = keras.datasets.cifar10
@@ -224,15 +132,12 @@ def cifar10G_data_builder():
     images = numpy.array(images).reshape(len(images), -1)  # Aplanar imágenes
     labels = y_train.flatten()  # Asegurar que las etiquetas sean un array 1D
 
-    #print("Nuevo shape imágenes:", images.shape)  # (50000, 1024)
-
     # Guardar en archivo .mat
     mat_data = {"data": images, "target": labels}
     scipy.io.savemat("cifar10G.mat", mat_data)
 
-    #print(" Dataset guardado como 'cifar10G.mat'")
+    print(" Dataset guardado como 'cifar10G.mat'")
 
-    # Cargar dataset para validación
     cifar10G_path = "./cifar10G.mat"
     cifar10G_raw = loadmat(cifar10G_path)
 
@@ -243,12 +148,8 @@ def cifar10G_data_builder():
         "DESCR": "",
     }
 
-    #print(" Dataset cargado correctamente y listo para usar.")
-
-
+    print(dataset)
     return dataset
-
-
 #############################
 
 
