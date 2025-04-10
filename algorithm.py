@@ -159,15 +159,11 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
 
                 if layer_type == "Dense":
                     params_list.append(layer.parameters["units"])
-                    params_min_list.append(const_params_min[0])
-                    params_max_list.append(const_params_max[0])
-                    params_jump_list.append(const_params_jump[0])
+                    index = 0
 
                 elif layer_type == "Dropout":
                     params_list.append(layer.parameters["rate"])
-                    params_min_list.append(const_params_min[1])
-                    params_max_list.append(const_params_max[1])
-                    params_jump_list.append(const_params_jump[1])
+                    index = 1
 
                 elif layer_type == "Convolution2D":
                     params_list.append(layer.parameters["filters"])
@@ -176,39 +172,32 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
                     params_jump_list.append(const_params_jump[2])
 
                     params_list.append(layer.parameters["kernel_size"])
-                    params_min_list.append(const_params_min[3])
-                    params_max_list.append(const_params_max[3])
-                    params_jump_list.append(const_params_jump[3])
+                    index = 3
 
                 elif layer_type == "MaxPooling2D":
-                    if layer.parameters["pool_size"][0] < layer.parameters["pool_size"][1]:
-                        params_list.append(layer.parameters["pool_size"][0])
-                    else:
-                        params_list.append(layer.parameters["pool_size"][1])
+                    params_list.append(layer.parameters["pool_size"][0])
+                    params_list.append(layer.parameters["pool_size"][1])
 
-                    params_min_list.append(const_params_min[4])
-                    params_max_list.append(const_params_max[4])
-                    params_jump_list.append(const_params_jump[4])
+                    params_min_list.extend([const_params_min[4], const_params_min[4]])
+                    params_max_list.extend([const_params_max[4], const_params_max[4]])
+                    params_jump_list.extend([const_params_jump[4], const_params_jump[4]])
 
-                    if layer.parameters["strides"][0] == "null":
-                        stride_0 = 1
+                    if layer.parameters["strides"] == "null":
+                        params_list.append(1)
                     else:
-                        stride_0 = layer.parameters["strides"][0]
+                        params_list.append(layer.parameters["strides"][0])
                     
-                    if layer.parameters["strides"][1] == "null":
-                        stride_1 = 1
-                    else:
-                        stride_1 = layer.parameters["strides"][1]
+                    index = 5
+                
+                else:
+                    continue
+                
+                params_min_list.append(const_params_min[index])
+                params_max_list.append(const_params_max[index])
+                params_jump_list.append(const_params_jump[index])
 
-                    #Creo que stride.x y stride.y son siempre iguales
-                    if stride_0 < stride_1:
-                        params_list.append(stride_0)
-                    else:
-                        params_list.append(stride_1)
 
-                    params_min_list.append(const_params_min[5])
-                    params_max_list.append(const_params_max[5])
-                    params_jump_list.append(const_params_jump[5])
+            
 
             #print("\n\n")
             #print(best_model_struct)
