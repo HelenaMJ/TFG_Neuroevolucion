@@ -91,6 +91,8 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
     const_params_min = [50, 0.2, 5, 3, 2, 1]
     const_params_max = [350, 0.6, 50, 7, 6, 6]
     const_params_jump = [50, 0.2, 10, 2, 1, 1]
+
+    max_iter = 5
     ########
 
     num_generations_no_changes = 0
@@ -144,7 +146,9 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         ########
         if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
             #best_model = toolbox.select(population, 1)
-        
+
+            #for ale in range(len(population)):
+
             best_model_struct = toolbox.clone(population[0].net_struct)
             num_layers = len(best_model_struct)
 
@@ -153,7 +157,7 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
             params_max_list = []
             params_jump_list = []
 
-            for i in range(num_layers):
+            for i in range(num_layers-1):   #Menos uno por la densa del final
                 layer = best_model_struct[i]
                 layer_type = layer.type
 
@@ -196,15 +200,39 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
                 params_max_list.append(const_params_max[index])
                 params_jump_list.append(const_params_jump[index])
 
+            print("\n\n")
+            print(best_model_struct)
+            print("Params_list:", params_list)
+            print("Max:", params_max_list)
+            print("Min:", params_min_list)
+            print("Jump:", params_jump_list)
+            print("\n\n")
 
+            for i in range(len(params_list)):
+                if params_list[i] > params_max_list[i]:
+                    params_list[i] = params_max_list[i]
+                elif params_list[i] < params_min_list[i]:
+                    params_list[i] = params_min_list[i]
             
 
-            #print("\n\n")
-            #print(best_model_struct)
+            for i in range(max_iter):
+                for p in range(len(params_list)):
+
+                    mult = random.randint(-1, 1)
+                    new_value = params_list[p] + mult * params_jump_list[p]
+
+                    if new_value > params_max_list[p]:
+                        params_list[p] = params_max_list[p]
+                        params_jump_list[p] = 0
+                    elif new_value < params_min_list[p]:
+                        params_list[p] = params_min_list[p]
+                        params_jump_list[p] = 0
+                    else:
+                        params_list[p] = new_value
+
+
+            #print("\n")
             #print("Params_list:", params_list)
-            #print("Max:", params_max_list)
-            #print("Min:", params_min_list)
-            #print("Jump:", params_jump_list)
             #print("\n\n")
 
 
