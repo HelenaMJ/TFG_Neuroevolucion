@@ -124,8 +124,8 @@ def cifar10G_data_builder():
     images = []
     for img in x_train:
         img_gray = Image.fromarray(img).convert("L")  # Convertir a escala de grises
-        img_resized = img_gray.resize((28, 28))  # Redimensionar a 28x28
-        img_array = numpy.array(img_resized).astype(numpy.uint8)  # Convertir a array sin dimensiones extra
+        #img_resized = img_gray.resize((28, 28))  # Redimensionar a 28x28
+        img_array = numpy.array(img_gray).astype(numpy.uint8)  # Convertir a array sin dimensiones extra
         images.append(img_array.flatten())  # Aplanar y agregar a la lista
 
     # Convertir listas a numpy arrays
@@ -134,11 +134,11 @@ def cifar10G_data_builder():
 
     # Guardar en archivo .mat
     mat_data = {"data": images, "target": labels}
-    scipy.io.savemat("cifar10G.mat", mat_data)
+    scipy.io.savemat("cifar10G32.mat", mat_data)
 
-    print(" Dataset guardado como 'cifar10G.mat'")
+    print(" Dataset guardado como 'cifar10G32.mat'")
 
-    cifar10G_path = "./cifar10G.mat"
+    cifar10G_path = "./cifar10G28.mat"
     cifar10G_raw = loadmat(cifar10G_path)
 
     dataset = {

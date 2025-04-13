@@ -149,7 +149,8 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
 
             #for ale in range(len(population)):
 
-            best_model_struct = toolbox.clone(population[0].net_struct)
+            #best_model_struct = toolbox.clone(population[0].net_struct)
+            best_model_struct = population[0].net_struct
             num_layers = len(best_model_struct)
 
             params_list = []
@@ -234,6 +235,70 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
             #print("\n")
             #print("Params_list:", params_list)
             #print("\n\n")
+
+            new_best_model = toolbox.clone(population[0])
+            new_best_model_struct = new_best_model.net_struct
+            index_params_list = 0
+
+            for i in range(num_layers-1):
+                layer = new_best_model_struct[i]
+                layer_type = layer.type
+
+                if layer_type == "Dense":
+                    new_best_model.net_struct[i].parameters["units"] = params_list[index_params_list]
+                    index_params_list += 1
+                
+                elif layer_type == "Dropout":
+                    new_best_model.net_struct[i].parameters["rate"] = params_list[index_params_list]
+                    index_params_list += 1
+                
+                elif layer_type == "Convolution2D":
+                    new_best_model.net_struct[i].parameters["filters"] = params_list[index_params_list]
+                    new_best_model.net_struct[i].parameters["kernel_size"] = params_list[index_params_list+1]
+                    index_params_list += 2
+                
+                elif layer_type == "MaxPooling2D":
+                    new_best_model.net_struct[i].parameters["pool_size"][0] = params_list[index_params_list]
+                    new_best_model.net_struct[i].parameters["pool_size"][1] = params_list[index_params_list+1]
+                    index_params_list += 2
+
+                    if params_list[index_params_list] == 1:
+                        new_best_model.net_struct[i].parameters["strides"] = "null"
+                    else:
+                        s = params_list[index_params_list]
+                        new_best_model.net_struct[i].parameters["strides"] = (s, s)
+                    index_params_list += 1
+                
+                else:
+                    continue
+            
+
+            print("Original:", population[0])
+            print("Fitness:", population[0].fitness.values[0])
+            print("\n")
+            print("Copia:", new_best_model)
+            new_fitness = toolbox.evaluate(new_best_model)
+            print("Fitness:", new_fitness[0])
+            print("\n\n")
+
+            if new_fitness[0] > population[0].fitness.values[0]:
+                population[0] = new_best_model
+                #del population[0].fitness.values
+                population[0].fitness.values = (new_fitness[0], )
+                population[0].my_fitness = new_fitness
+                print("Gano")
+
+                for i in range(len(population)):
+                    print(population[i])
+
+            
+
+            print("\nGanador de ser el popu0:", population[0])
+            print("Fitness del ganadoooor:", population[0].fitness.values, "\nOTROOOOO:", population[0].my_fitness)
+
+
+            if halloffame is not None:
+                halloffame.update(population)
 
 
             
