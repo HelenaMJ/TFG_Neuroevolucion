@@ -85,15 +85,6 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
 
     prev_avg = record["avg"]
 
-    ########
-    #units (Dense), rate (Dropout), filters (Conv2D), kernel_size (Conv2D), 
-        #pool_size (MaxPooling2D), strides (MaxPooling2D)
-    const_params_min = [50, 0.2, 5, 3, 2, 1]
-    const_params_max = [350, 0.6, 50, 7, 6, 6]
-    const_params_jump = [50, 0.2, 10, 2, 1, 1]
-
-    max_iter = 5
-    ########
 
     num_generations_no_changes = 0
     print("Size of the population is: " + str(len(population)))
@@ -132,7 +123,12 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         if halloffame is not None:
             halloffame.update(offspring)
 
+        max_iter = 5
+
         if num_generations_no_changes > 5:
+
+
+            
             print("MAX GENERATIONS WITH NO CHANGES REACHED. Stopping...")
             record = stats.compile(population) if stats is not None else {}
             logbook.record(gen=gen, nevals=len(invalid_ind), **record)
@@ -144,148 +140,24 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         population[:] = toolbox.select(population + offspring, mu)
 
         ########
+
         if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
-            #best_model = toolbox.select(population, 1)
 
-            #for ale in range(len(population)):
-
-            #best_model_struct = toolbox.clone(population[0].net_struct)
-            best_model_struct = population[0].net_struct
-            num_layers = len(best_model_struct)
-
-            params_list = []
-            params_min_list = []
-            params_max_list = []
-            params_jump_list = []
-
-            for i in range(num_layers-1):   #Menos uno por la densa del final
-                layer = best_model_struct[i]
-                layer_type = layer.type
-
-                if layer_type == "Dense":
-                    params_list.append(layer.parameters["units"])
-                    index = 0
-
-                elif layer_type == "Dropout":
-                    params_list.append(layer.parameters["rate"])
-                    index = 1
-
-                elif layer_type == "Convolution2D":
-                    params_list.append(layer.parameters["filters"])
-                    params_min_list.append(const_params_min[2])
-                    params_max_list.append(const_params_max[2])
-                    params_jump_list.append(const_params_jump[2])
-
-                    params_list.append(layer.parameters["kernel_size"])
-                    index = 3
-
-                elif layer_type == "MaxPooling2D":
-                    params_list.append(layer.parameters["pool_size"][0])
-                    params_list.append(layer.parameters["pool_size"][1])
-
-                    params_min_list.extend([const_params_min[4], const_params_min[4]])
-                    params_max_list.extend([const_params_max[4], const_params_max[4]])
-                    params_jump_list.extend([const_params_jump[4], const_params_jump[4]])
-
-                    if layer.parameters["strides"] == "null":
-                        params_list.append(1)
-                    else:
-                        params_list.append(layer.parameters["strides"][0])
-                    
-                    index = 5
-                
-                else:
-                    continue
-                
-                params_min_list.append(const_params_min[index])
-                params_max_list.append(const_params_max[index])
-                params_jump_list.append(const_params_jump[index])
-
-            print("\n\n")
-            print(best_model_struct)
-            print("Params_list:", params_list)
-            print("Max:", params_max_list)
-            print("Min:", params_min_list)
-            print("Jump:", params_jump_list)
-            print("\n\n")
-
-            for i in range(len(params_list)):
-                if params_list[i] > params_max_list[i]:
-                    params_list[i] = params_max_list[i]
-                elif params_list[i] < params_min_list[i]:
-                    params_list[i] = params_min_list[i]
+            best_model_copy = toolbox.clone(population[0])
+            new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
             
-
-            for i in range(max_iter):
-                for p in range(len(params_list)):
-
-                    mult = random.randint(-1, 1)
-                    new_value = params_list[p] + mult * params_jump_list[p]
-
-                    if new_value > params_max_list[p]:
-                        params_list[p] = params_max_list[p]
-                        params_jump_list[p] = 0
-                    elif new_value < params_min_list[p]:
-                        params_list[p] = params_min_list[p]
-                        params_jump_list[p] = 0
-                    else:
-                        params_list[p] = new_value
-
-
-            #print("\n")
-            #print("Params_list:", params_list)
-            #print("\n\n")
-
-            new_best_model = toolbox.clone(population[0])
-            new_best_model_struct = new_best_model.net_struct
-            index_params_list = 0
-
-            for i in range(num_layers-1):
-                layer = new_best_model_struct[i]
-                layer_type = layer.type
-
-                if layer_type == "Dense":
-                    new_best_model.net_struct[i].parameters["units"] = params_list[index_params_list]
-                    index_params_list += 1
-                
-                elif layer_type == "Dropout":
-                    new_best_model.net_struct[i].parameters["rate"] = params_list[index_params_list]
-                    index_params_list += 1
-                
-                elif layer_type == "Convolution2D":
-                    new_best_model.net_struct[i].parameters["filters"] = params_list[index_params_list]
-                    new_best_model.net_struct[i].parameters["kernel_size"] = params_list[index_params_list+1]
-                    index_params_list += 2
-                
-                elif layer_type == "MaxPooling2D":
-                    new_best_model.net_struct[i].parameters["pool_size"][0] = params_list[index_params_list]
-                    new_best_model.net_struct[i].parameters["pool_size"][1] = params_list[index_params_list+1]
-                    index_params_list += 2
-
-                    if params_list[index_params_list] == 1:
-                        new_best_model.net_struct[i].parameters["strides"] = "null"
-                    else:
-                        s = params_list[index_params_list]
-                        new_best_model.net_struct[i].parameters["strides"] = (s, s)
-                    index_params_list += 1
-                
-                else:
-                    continue
-            
-
             print("Original:", population[0])
             print("Fitness:", population[0].fitness.values[0])
             print("\n")
             print("Copia:", new_best_model)
-            new_fitness = toolbox.evaluate(new_best_model)
-            print("Fitness:", new_fitness[0])
+            new_best_model_fitness = toolbox.evaluate(new_best_model)
+            print("Fitness:", new_best_model_fitness[0])
             print("\n\n")
 
-            if new_fitness[0] > population[0].fitness.values[0]:
+            if new_best_model_fitness[0] > population[0].fitness.values[0]:
                 population[0] = new_best_model
-                #del population[0].fitness.values
-                population[0].fitness.values = (new_fitness[0], )
-                population[0].my_fitness = new_fitness
+                population[0].fitness.values = (new_best_model_fitness[0], )
+                population[0].my_fitness = new_best_model_fitness
                 print("Gano")
 
                 for i in range(len(population)):
@@ -530,3 +402,131 @@ def generate_random_layer_parameter(parameter_name, layer_type, configuration):
     parameter_config = configuration.layers[layer_type]["parameters"][parameter_name]
 
     return parser_parameter_types(parameter_config, parameter_type)
+
+
+
+######## best_model_copy = clone(population[0])
+def LocalSearch_SolisWets(best_model_copy, num_iter=5):
+
+    #units (Dense), rate (Dropout), filters (Conv2D), kernel_size (Conv2D), 
+    #pool_size (MaxPooling2D), strides (MaxPooling2D)
+    const_params_min = [50, 0.2, 5, 3, 2, 1]
+    const_params_max = [350, 0.6, 50, 7, 6, 6]
+    const_params_jump = [50, 0.2, 10, 2, 1, 1]
+
+    best_model_struct = best_model_copy.net_struct
+    num_layers = len(best_model_struct)
+
+    params_list = []
+    params_min_list = []
+    params_max_list = []
+    params_jump_list = []
+
+    for i in range(num_layers-1):   #Menos uno por la densa del final
+        layer = best_model_struct[i]
+        layer_type = layer.type
+
+        if layer_type == "Dense":
+            params_list.append(layer.parameters["units"])
+            index = 0
+
+        elif layer_type == "Dropout":
+            params_list.append(layer.parameters["rate"])
+            index = 1
+
+        elif layer_type == "Convolution2D":
+            params_list.append(layer.parameters["filters"])
+            params_min_list.append(const_params_min[2])
+            params_max_list.append(const_params_max[2])
+            params_jump_list.append(const_params_jump[2])
+
+            params_list.append(layer.parameters["kernel_size"])
+            index = 3
+
+        elif layer_type == "MaxPooling2D":
+            params_list.append(layer.parameters["pool_size"][0])
+            params_list.append(layer.parameters["pool_size"][1])
+
+            params_min_list.extend([const_params_min[4], const_params_min[4]])
+            params_max_list.extend([const_params_max[4], const_params_max[4]])
+            params_jump_list.extend([const_params_jump[4], const_params_jump[4]])
+
+            if layer.parameters["strides"] == "null":
+                params_list.append(1)
+            else:
+                params_list.append(layer.parameters["strides"][0])
+            
+            index = 5
+        
+        else:
+            continue
+        
+        params_min_list.append(const_params_min[index])
+        params_max_list.append(const_params_max[index])
+        params_jump_list.append(const_params_jump[index])
+
+    #print("\n\n")
+    #print(best_model_struct)
+    #print("Params_list:", params_list)
+    #print("Max:", params_max_list)
+    #print("Min:", params_min_list)
+    #print("Jump:", params_jump_list)
+    #print("\n\n")
+
+    for i in range(len(params_list)):
+        if params_list[i] > params_max_list[i]:
+            params_list[i] = params_max_list[i]
+        elif params_list[i] < params_min_list[i]:
+            params_list[i] = params_min_list[i]
+    
+
+    for i in range(num_iter):
+        for p in range(len(params_list)):
+
+            mult = random.randint(-1, 1)
+            new_value = params_list[p] + mult * params_jump_list[p]
+
+            if new_value > params_max_list[p]:
+                params_list[p] = params_max_list[p]
+                params_jump_list[p] = 0
+            elif new_value < params_min_list[p]:
+                params_list[p] = params_min_list[p]
+                params_jump_list[p] = 0
+            else:
+                params_list[p] = new_value
+
+
+    index_params_list = 0
+    for i in range(num_layers-1):
+        layer = best_model_struct[i]
+        layer_type = layer.type
+
+        if layer_type == "Dense":
+            best_model_copy.net_struct[i].parameters["units"] = params_list[index_params_list]
+            index_params_list += 1
+        
+        elif layer_type == "Dropout":
+            best_model_copy.net_struct[i].parameters["rate"] = params_list[index_params_list]
+            index_params_list += 1
+        
+        elif layer_type == "Convolution2D":
+            best_model_copy.net_struct[i].parameters["filters"] = params_list[index_params_list]
+            best_model_copy.net_struct[i].parameters["kernel_size"] = params_list[index_params_list+1]
+            index_params_list += 2
+        
+        elif layer_type == "MaxPooling2D":
+            best_model_copy.net_struct[i].parameters["pool_size"][0] = params_list[index_params_list]
+            best_model_copy.net_struct[i].parameters["pool_size"][1] = params_list[index_params_list+1]
+            index_params_list += 2
+
+            if params_list[index_params_list] == 1:
+                best_model_copy.net_struct[i].parameters["strides"] = "null"
+            else:
+                s = params_list[index_params_list]
+                best_model_copy.net_struct[i].parameters["strides"] = (s, s)
+            index_params_list += 1
+        
+        else:
+            continue
+    
+    return best_model_copy
