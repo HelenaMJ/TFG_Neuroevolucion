@@ -127,55 +127,43 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
 
         if num_generations_no_changes > 5:
 
-
-            
-            print("MAX GENERATIONS WITH NO CHANGES REACHED. Stopping...")
-            record = stats.compile(population) if stats is not None else {}
-            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-            if verbose:
-                print(logbook.stream)
-            return population, logbook
-
-        # Select the next generation population
-        population[:] = toolbox.select(population + offspring, mu)
-
-        ########
-
-        if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
-
             best_model_copy = toolbox.clone(population[0])
             new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
-            
-            print("Original:", population[0])
-            print("Fitness:", population[0].fitness.values[0])
-            print("\n")
-            print("Copia:", new_best_model)
             new_best_model_fitness = toolbox.evaluate(new_best_model)
-            print("Fitness:", new_best_model_fitness[0])
-            print("\n\n")
 
             if new_best_model_fitness[0] > population[0].fitness.values[0]:
                 population[0] = new_best_model
                 population[0].fitness.values = (new_best_model_fitness[0], )
                 population[0].my_fitness = new_best_model_fitness
-                print("Gano")
 
-                for i in range(len(population)):
-                    print(population[i])
+                if halloffame is not None:
+                    halloffame.update(population)
 
-            
+            else:
+                print("MAX GENERATIONS WITH NO CHANGES REACHED. Stopping...")
+                record = stats.compile(population) if stats is not None else {}
+                logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+                if verbose:
+                    print(logbook.stream)
+                return population, logbook
 
-            print("\nGanador de ser el popu0:", population[0])
-            print("Fitness del ganadoooor:", population[0].fitness.values, "\nOTROOOOO:", population[0].my_fitness)
+        # Select the next generation population
+        population[:] = toolbox.select(population + offspring, mu)
 
+        ########
+        if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
+
+            best_model_copy = toolbox.clone(population[0])
+            new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
+            new_best_model_fitness = toolbox.evaluate(new_best_model)
+
+            if new_best_model_fitness[0] > population[0].fitness.values[0]:
+                population[0] = new_best_model
+                population[0].fitness.values = (new_best_model_fitness[0], )
+                population[0].my_fitness = new_best_model_fitness
 
             if halloffame is not None:
                 halloffame.update(population)
-
-
-            
-
-
         ########
 
         # Update the statistics with the new population
@@ -464,14 +452,6 @@ def LocalSearch_SolisWets(best_model_copy, num_iter=5):
         params_min_list.append(const_params_min[index])
         params_max_list.append(const_params_max[index])
         params_jump_list.append(const_params_jump[index])
-
-    #print("\n\n")
-    #print(best_model_struct)
-    #print("Params_list:", params_list)
-    #print("Max:", params_max_list)
-    #print("Min:", params_min_list)
-    #print("Jump:", params_jump_list)
-    #print("\n\n")
 
     for i in range(len(params_list)):
         if params_list[i] > params_max_list[i]:

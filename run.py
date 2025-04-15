@@ -24,7 +24,7 @@ from PIL import Image
 import keras as keras
 from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img
 
-MAX_GENERATIONS_NO_CHANGES = 3
+MAX_GENERATIONS_NO_CHANGES = 5
 
 """
 EXPERIMENTS:
@@ -32,9 +32,10 @@ EXPERIMENTS:
 - 1: HORSEHUMAN-G
 - 2: VANGOGH-G
 - 3: CIFAR10-G
+- 4: FASHION_MNIST
 """
 
-EXPERIMENT = 3
+EXPERIMENT = 4
 
 #############################################
 # EXTRA CLASSES DEFINITION
@@ -115,32 +116,8 @@ def vangoghG_data_builder():
 ###########################
 def cifar10G_data_builder():
 
-    cifar10 = keras.datasets.cifar10
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-
-    #print("Original x_train shape:", x_train.shape)  # (50000, 32, 32, 3)
-
-    # Convertir imágenes a escala de grises y aplanarlas
-    images = []
-    for img in x_train:
-        img_gray = Image.fromarray(img).convert("L")  # Convertir a escala de grises
-        #img_resized = img_gray.resize((28, 28))  # Redimensionar a 28x28
-        img_array = numpy.array(img_gray).astype(numpy.uint8)  # Convertir a array sin dimensiones extra
-        images.append(img_array.flatten())  # Aplanar y agregar a la lista
-
-    # Convertir listas a numpy arrays
-    images = numpy.array(images).reshape(len(images), -1)  # Aplanar imágenes
-    labels = y_train.flatten()  # Asegurar que las etiquetas sean un array 1D
-
-    # Guardar en archivo .mat
-    mat_data = {"data": images, "target": labels}
-    scipy.io.savemat("cifar10G32.mat", mat_data)
-
-    print(" Dataset guardado como 'cifar10G32.mat'")
-
-    cifar10G_path = "./cifar10G28.mat"
+    cifar10G_path = "./cifar10G32.mat"
     cifar10G_raw = loadmat(cifar10G_path)
-
     dataset = {
         "data": cifar10G_raw["data"],
         "target": cifar10G_raw["target"][0],
@@ -148,7 +125,21 @@ def cifar10G_data_builder():
         "DESCR": "",
     }
 
-    print(dataset)
+    return dataset
+#############################
+
+#############################
+def fashion_mnist_data_builder():
+
+    fashion_mnist_path = "./fashion_mnist.mat"
+    fashion_mnist_raw = loadmat(fashion_mnist_path)
+    dataset = {
+        "data": fashion_mnist_raw["data"],
+        "target": fashion_mnist_raw["target"][0],
+        "COL_NAMES": ["label", "data"],
+        "DESCR": "",
+    }
+
     return dataset
 #############################
 
@@ -171,7 +162,7 @@ def timing(_):
 def get_string_parameters():
 
     output_string = ""
-    output_string += "Dataset: " + "MNIST" + "\n"
+    output_string += "Dataset: " + "FASHION_MNIST" + "\n"
     output_string += "Test size: " + str(test_size) + "\n"
     output_string += "Early stopping patience: " + str(early_stopping_patience) + "\n"
     output_string += "Loss: " + loss + "\n"
@@ -223,6 +214,9 @@ if __name__ == "__main__":
     elif EXPERIMENT == 3:
         print ("EXPERIMENT WITH CIFAR10-G DATASET")
         dataset = cifar10G_data_builder()
+    elif EXPERIMENT == 4:
+        print ("EXPERIMENT WITH FASHION_MNIST DATASET")
+        dataset = fashion_mnist_data_builder()
     else:
         print("EXPERIMENT NOT IMPLEMENTED!")
 
