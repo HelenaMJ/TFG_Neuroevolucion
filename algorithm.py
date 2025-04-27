@@ -123,14 +123,19 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         if halloffame is not None:
             halloffame.update(offspring)
 
+        #Iterations of the local search (Solis-Wets method)
         max_iter = 5
 
         if num_generations_no_changes > 5:
-
+            
+            #Clone the best model
             best_model_copy = toolbox.clone(population[0])
+            #Local Search to the best model copy
             new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
+            #Fitness of the new model
             new_best_model_fitness = toolbox.evaluate(new_best_model)
 
+            #If the new model is better than the former best model, this is updated
             if new_best_model_fitness[0] > population[0].fitness.values[0]:
                 population[0] = new_best_model
                 population[0].fitness.values = (new_best_model_fitness[0], )
@@ -139,6 +144,7 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
                 if halloffame is not None:
                     halloffame.update(population)
 
+            #Else the algorithmn stops
             else:
                 print("MAX GENERATIONS WITH NO CHANGES REACHED. Stopping...")
                 record = stats.compile(population) if stats is not None else {}
@@ -151,17 +157,23 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         population[:] = toolbox.select(population + offspring, mu)
 
         ########
+        #Local Search
         if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
-
+            
+            #Clone the best model
             best_model_copy = toolbox.clone(population[0])
+            #Local Search to the best model copy
             new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
+            #Fitness of the new model
             new_best_model_fitness = toolbox.evaluate(new_best_model)
 
+            #If the new model is better than the former best model, this is updated
             if new_best_model_fitness[0] > population[0].fitness.values[0]:
                 population[0] = new_best_model
                 population[0].fitness.values = (new_best_model_fitness[0], )
                 population[0].my_fitness = new_best_model_fitness
 
+            #Update Hall Of Fame
             if halloffame is not None:
                 halloffame.update(population)
         ########
@@ -393,11 +405,17 @@ def generate_random_layer_parameter(parameter_name, layer_type, configuration):
 
 
 
-######## best_model_copy = clone(population[0])
 def LocalSearch_SolisWets(best_model_copy, num_iter=5):
+    """
+    This method tries to improve the best model of the current generation by local search
+    :param best_model_copy: copy of the best model of the current generation
+    :param num_iter: number of iterations of the local search (Solis-Wets method)
+    :return best_model_copy: model that results after apply local search to the best model
+    """
 
     #units (Dense), rate (Dropout), filters (Conv2D), kernel_size (Conv2D), 
     #pool_size (MaxPooling2D), strides (MaxPooling2D)
+    #Lists with the parameters for the Solis-Wets method
     const_params_min = [50, 0.2, 5, 3, 2, 1]
     const_params_max = [350, 0.6, 50, 7, 6, 6]
     const_params_jump = [50, 0.2, 10, 2, 1, 1]
@@ -410,10 +428,12 @@ def LocalSearch_SolisWets(best_model_copy, num_iter=5):
     params_max_list = []
     params_jump_list = []
 
-    for i in range(num_layers-1):   #Menos uno por la densa del final
+    #For each layer (except the last one)
+    for i in range(num_layers-1):  
         layer = best_model_struct[i]
         layer_type = layer.type
 
+        #It adds the number parameters of that layer to the list of parameters
         if layer_type == "Dense":
             params_list.append(layer.parameters["units"])
             index = 0
@@ -452,20 +472,25 @@ def LocalSearch_SolisWets(best_model_copy, num_iter=5):
         params_min_list.append(const_params_min[index])
         params_max_list.append(const_params_max[index])
         params_jump_list.append(const_params_jump[index])
-
+    
+    #It checks each parameter is between the minimun and maximum
     for i in range(len(params_list)):
         if params_list[i] > params_max_list[i]:
             params_list[i] = params_max_list[i]
         elif params_list[i] < params_min_list[i]:
             params_list[i] = params_min_list[i]
     
-
+    #In each iteration of the method
     for i in range(num_iter):
+        #For each parameter on the list
         for p in range(len(params_list)):
 
+            #It calculates the new value of the parameter
             mult = random.randint(-1, 1)
             new_value = params_list[p] + mult * params_jump_list[p]
 
+            #If the new value is greater or lower than the maximun or minimun, the
+            #new value is adjusted and the jump size is updated to 0
             if new_value > params_max_list[p]:
                 params_list[p] = params_max_list[p]
                 params_jump_list[p] = 0
@@ -477,6 +502,8 @@ def LocalSearch_SolisWets(best_model_copy, num_iter=5):
 
 
     index_params_list = 0
+    
+    #Each number parameter of the model is updated to its new value
     for i in range(num_layers-1):
         layer = best_model_struct[i]
         layer_type = layer.type
