@@ -24,7 +24,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import tensorflow as tf
 
-tf.config.set_visible_devices([], 'GPU')
+#tf.config.set_visible_devices([], 'GPU')
 
 class KerasExecutor:
     # The number of neurons in the first and last layer included in network-structure is ommited.

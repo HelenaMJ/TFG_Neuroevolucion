@@ -31,7 +31,7 @@ def eval_keras(individual, ke):
 
     number_layers = individual.global_attributes.number_layers
 
-    return accuracy_validation, number_layers, accuracy_training, accuracy_test,
+    return accuracy_validation, number_layers, accuracy_training, accuracy_test, model.count_params()
 
 
 def compare_individuals(ind1, ind2):
@@ -68,6 +68,9 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
+    my_logbook = tools.Logbook()
+    my_logbook.header = ["gen", "nevals", "avg", "acc_train", "acc_val", "nlayers", "nparams"]
+
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
@@ -82,6 +85,12 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
     logbook.record(gen=0, nevals=len(invalid_ind), **record)
     if verbose:
         print(logbook.stream)
+    
+    my_logbook.record(gen=0, nevals=len(invalid_ind), avg=record["avg"][0], 
+                      acc_train=population[0].my_fitness[2], 
+                      acc_val=population[0].my_fitness[0],
+                      nlayers=population[0].my_fitness[1], 
+                      nparams=population[0].my_fitness[4])
 
     prev_avg = record["avg"]
 
@@ -151,7 +160,14 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
                 logbook.record(gen=gen, nevals=len(invalid_ind), **record)
                 if verbose:
                     print(logbook.stream)
-                return population, logbook
+                
+                my_logbook.record(gen=gen, nevals=len(invalid_ind), avg=record["avg"][0], 
+                      acc_train=population[0].my_fitness[2], 
+                      acc_val=population[0].my_fitness[0],
+                      nlayers=population[0].my_fitness[1], 
+                      nparams=population[0].my_fitness[4])
+
+                return population, logbook, my_logbook
 
         # Select the next generation population
         population[:] = toolbox.select(population + offspring, mu)
@@ -183,6 +199,12 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         logbook.record(gen=gen, nevals=len(invalid_ind), **record)
         if verbose:
             print(logbook.stream)
+        
+        my_logbook.record(gen=gen, nevals=len(invalid_ind), avg=record["avg"][0], 
+                      acc_train=population[0].my_fitness[2], 
+                      acc_val=population[0].my_fitness[0],
+                      nlayers=population[0].my_fitness[1], 
+                      nparams=population[0].my_fitness[4])
 
         new_avg = record["avg"]
         same_array = True
@@ -199,7 +221,7 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
 
         print("Size of the population is: " + str(len(population)))
 
-    return population, logbook
+    return population, logbook, my_logbook
 
 
 class GlobalAttributes:
@@ -407,8 +429,8 @@ def generate_random_layer_parameter(parameter_name, layer_type, configuration):
 
 def LocalSearch_SolisWets(best_model_copy, num_iter=5):
     """
-    This method tries to improve the best model of the current generation by local search
-    :param best_model_copy: copy of the best model of the current generation
+    This method tries to improve the best model of the current population by local search
+    :param best_model_copy: copy of the best model of the current population
     :param num_iter: number of iterations of the local search (Solis-Wets method)
     :return best_model_copy: model that results after apply local search to the best model
     """

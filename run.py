@@ -22,7 +22,7 @@ from algorithm import eval_keras, compare_individuals, Individual, eaMuPlusLambd
 import scipy
 from PIL import Image
 import keras as keras
-from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img
+#from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img
 
 MAX_GENERATIONS_NO_CHANGES = 5
 
@@ -273,7 +273,7 @@ if __name__ == "__main__":
         toolbox.register("map", pool.map)
 
     # Running genetic algorithm
-    pop, logbook = eaMuPlusLambdaModified(population=population, toolbox=toolbox, mu=args.mu,
+    pop, logbook, my_logbook = eaMuPlusLambdaModified(population=population, toolbox=toolbox, mu=args.mu,
                                           lambda_=args.lamb, cxpb=args.cxpb,
                                           mutpb=args.mutpb, ngen=args.ngen, stats=stats, halloffame=hof)
     print('-------> TERMINADO')
@@ -284,7 +284,7 @@ if __name__ == "__main__":
 
     # Generating results
     for index, individual in enumerate(hof):
-        accuracy_validation, number_layers, accuracy_training, accuracy_test = individual.my_fitness
+        accuracy_validation, number_layers, accuracy_training, accuracy_test, _ = individual.my_fitness
 
         file_individuals += "New individual: " + str(index) + "\n"
         file_individuals += "ACC_TRAINING {} ACC_VALIDATION {} ACC_TEST {} NUMBER_LAYERS {}\n\n".format(
@@ -308,5 +308,8 @@ if __name__ == "__main__":
 
     with open('statistics' + str(execution_id) + '.txt', 'w') as outfile:
         outfile.write(str(logbook))
+    
+    with open('my_statistics' + str(execution_id) + '.csv', 'w') as outfile:
+        outfile.write(str(my_logbook))
 
     print("EXECUTION FINISHED, ID: " + str(execution_id))
