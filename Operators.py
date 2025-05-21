@@ -11,6 +11,7 @@ from algorithm import Layer, generate_random_global_parameter, generate_random_l
     create_random_valid_layer
 import sys
 
+
 def complete_crossover(ind1, ind2, indpb, config):
 
 

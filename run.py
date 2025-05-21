@@ -20,11 +20,15 @@ from Operators import complete_crossover, complete_mutation
 from algorithm import eval_keras, compare_individuals, Individual, eaMuPlusLambdaModified, dummy_eval
 
 import scipy
-from PIL import Image
+#from PIL import Image
 import keras as keras
+import tensorflow as tf
 #from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img
 
-MAX_GENERATIONS_NO_CHANGES = 5
+tf.config.threading.set_intra_op_parallelism_threads(1)
+tf.config.threading.set_inter_op_parallelism_threads(1)
+
+MAX_GENERATIONS_NO_CHANGES = 2
 
 """
 EXPERIMENTS:
@@ -162,7 +166,7 @@ def timing(_):
 def get_string_parameters():
 
     output_string = ""
-    output_string += "Dataset: " + "FASHION_MNIST" + "\n"
+    output_string += "Dataset: " + "CIFAR10-G" + "\n"
     output_string += "Test size: " + str(test_size) + "\n"
     output_string += "Early stopping patience: " + str(early_stopping_patience) + "\n"
     output_string += "Loss: " + loss + "\n"
@@ -199,7 +203,10 @@ if __name__ == "__main__":
                         help='Multi-threaded execution')
     args = parser.parse_args()
 
-
+    if args.seed != 1652:
+        random.seed(args.seed)
+        numpy.random.seed(args.seed)
+        tf.random.set_seed(args.seed)
 
     dataset = None
     if EXPERIMENT == 0:
@@ -223,6 +230,7 @@ if __name__ == "__main__":
     execution_id = time.time()
 
     print("EXECUTION ID: " + str(execution_id))
+    print("SEED: " + str(args.seed))
 
     # Loading parameters file
     configuration = Configuration(args.paramFile)
@@ -236,6 +244,7 @@ if __name__ == "__main__":
     creator.create("Individual", Individual, fitness=creator.FitnessMax)
 
     toolbox = base.Toolbox()
+
 
     #####################
 
@@ -313,3 +322,5 @@ if __name__ == "__main__":
         outfile.write(str(my_logbook))
 
     print("EXECUTION FINISHED, ID: " + str(execution_id))
+    print("SEED: " + str(args.seed))
+    print("MAX_GENERATIONS_NO_CHANGES: " + str(MAX_GENERATIONS_NO_CHANGES))

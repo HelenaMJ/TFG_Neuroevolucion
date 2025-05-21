@@ -24,7 +24,7 @@ def eval_keras(individual, ke):
     metrics_names, scores_training, scores_validation, scores_test, model = my_ke.execute(individual)
     ###print("hasf: ", metrics_names)
     
-    ###CAMBIO de accuracy a compile_metrics
+    ###CAMBIO: compile_metrics 2.18, accuracy 2.15
     accuracy_training = scores_training[metrics_names.index("compile_metrics")]
     accuracy_validation = scores_validation[metrics_names.index("compile_metrics")]
     accuracy_test = scores_test[metrics_names.index("compile_metrics")]
@@ -135,63 +135,64 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         #Iterations of the local search (Solis-Wets method)
         max_iter = 5
 
-        if num_generations_no_changes > 5:
+        if num_generations_no_changes >= 5:
             
             #Clone the best model
-            best_model_copy = toolbox.clone(population[0])
+        #    best_model_copy = toolbox.clone(population[0])
             #Local Search to the best model copy
-            new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
+        #    new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
             #Fitness of the new model
-            new_best_model_fitness = toolbox.evaluate(new_best_model)
+        #    new_best_model_fitness = toolbox.evaluate(new_best_model)
 
             #If the new model is better than the former best model, this is updated
-            if new_best_model_fitness[0] > population[0].fitness.values[0]:
-                population[0] = new_best_model
-                population[0].fitness.values = (new_best_model_fitness[0], )
-                population[0].my_fitness = new_best_model_fitness
+        #    if new_best_model_fitness[0] > population[0].fitness.values[0]:
+        #        population[0] = new_best_model
+        #        population[0].fitness.values = (new_best_model_fitness[0], )
+        #        population[0].my_fitness = new_best_model_fitness
 
-                if halloffame is not None:
-                    halloffame.update(population)
+        #        if halloffame is not None:
+        #            halloffame.update(population)
 
             #Else the algorithmn stops
-            else:
-                print("MAX GENERATIONS WITH NO CHANGES REACHED. Stopping...")
-                record = stats.compile(population) if stats is not None else {}
-                logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-                if verbose:
-                    print(logbook.stream)
-                
-                my_logbook.record(gen=gen, nevals=len(invalid_ind), avg=record["avg"][0], 
-                      acc_train=population[0].my_fitness[2], 
-                      acc_val=population[0].my_fitness[0],
-                      nlayers=population[0].my_fitness[1], 
-                      nparams=population[0].my_fitness[4])
+        #    else:
+            print("MAX GENERATIONS WITH NO CHANGES REACHED. Stopping...")
+            record = stats.compile(population) if stats is not None else {}
+            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+            if verbose:
+                print(logbook.stream)
+            
+            my_logbook.record(gen=gen, nevals=len(invalid_ind), avg=record["avg"][0], 
+                    acc_train=population[0].my_fitness[2], 
+                    acc_val=population[0].my_fitness[0],
+                    nlayers=population[0].my_fitness[1], 
+                    nparams=population[0].my_fitness[4])
 
-                return population, logbook, my_logbook
+            return population, logbook, my_logbook
 
         # Select the next generation population
         population[:] = toolbox.select(population + offspring, mu)
 
         ########
         #Local Search
-        if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
+        #if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
             
             #Clone the best model
-            best_model_copy = toolbox.clone(population[0])
+        #    best_model_copy = toolbox.clone(population[0])
             #Local Search to the best model copy
-            new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
+        #    new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
             #Fitness of the new model
-            new_best_model_fitness = toolbox.evaluate(new_best_model)
+        #    new_best_model_fitness = toolbox.evaluate(new_best_model)
 
             #If the new model is better than the former best model, this is updated
-            if new_best_model_fitness[0] > population[0].fitness.values[0]:
-                population[0] = new_best_model
-                population[0].fitness.values = (new_best_model_fitness[0], )
-                population[0].my_fitness = new_best_model_fitness
+        #    if new_best_model_fitness[0] > population[0].fitness.values[0]:
+        #        population[0] = new_best_model
+        #        population[0].fitness.values = (new_best_model_fitness[0], )
+        #        population[0].my_fitness = new_best_model_fitness
 
             #Update Hall Of Fame
-            if halloffame is not None:
-                halloffame.update(population)
+        #    if halloffame is not None:
+        #        halloffame.update(population)
+            
         ########
 
         # Update the statistics with the new population
@@ -236,7 +237,7 @@ class GlobalAttributes:
 
 class Individual(object):
     def __init__(self, config, n_global_in, n_global_out):
-
+        
         n_layers_start = 5
         num_min = 3
         self.configuration = config
@@ -256,11 +257,14 @@ class Individual(object):
                                               itertools.dropwhile(lambda l: len(l) < num_min,
                                                                   state_machine.strings())))
 
-        first_layers = list(set([b[0] for b in candidates]))
+        ###first_layers = list(set([b[0] for b in candidates]))
+        first_layers = sorted(set([b[0] for b in candidates]))
         candidates = [random.choice([z for z in candidates if z[0] == first_layers[l]]) for l in
                       range(len(first_layers))]
 
-        sizes = list(set(map(len, candidates)))
+        ###sizes = list(set(map(len, candidates)))
+        sizes = sorted(set(map(len, candidates)))
+
         random_size = random.choice(sizes)
         candidates = list(filter(lambda c: len(c) == random_size, candidates))
 
