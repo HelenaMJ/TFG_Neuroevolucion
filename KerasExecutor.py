@@ -99,7 +99,10 @@ class KerasExecutor:
                 pool_size = (min(layer.parameters['pool_size'][0], model.output_shape[1]),
                              min(layer.parameters['pool_size'][1], model.output_shape[2]))
 
-                model.add(MaxPooling2D(pool_size=pool_size, strides=layer.parameters['strides']))
+                if layer.parameters['strides'] is None:
+                    model.add(MaxPooling2D(pool_size=pool_size, strides=(1,1)))
+                else:
+                    model.add(MaxPooling2D(pool_size=pool_size, strides=layer.parameters['strides']))
 
             elif layer.type == "Reshape":
 

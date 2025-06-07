@@ -2,6 +2,7 @@
 import random
 import sys
 
+from functools import cmp_to_key
 from copy import deepcopy
 
 import itertools
@@ -44,7 +45,7 @@ def compare_individuals(ind1, ind2):
     return ind1_string == ind2_string
 
 
-def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
+def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, threshold,
                            stats=None, halloffame=None, verbose=__debug__):
     """This is the :math:`(\mu + \lambda)` evolutionary algorithm.
     :param lambda_:
@@ -75,7 +76,7 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
-        ind.fitness.values = (fit[0], )
+        ind.fitness.values = (fit[0],)
         ind.my_fitness = fit
 
     if halloffame is not None:
@@ -91,11 +92,12 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
                       acc_val=population[0].my_fitness[0],
                       nlayers=population[0].my_fitness[1], 
                       nparams=population[0].my_fitness[4])
-
+    ###
     prev_avg = record["avg"]
 
 
     num_generations_no_changes = 0
+    contadoresNF = [0,0]
     print("Size of the population is: " + str(len(population)))
     # Begin the generational process
     for gen in range(1, ngen + 1):
@@ -125,7 +127,8 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = (fit[0], )
+            #ind.fitness.values = (fit[0], fit[4])
+            ind.fitness.values = (fit[0],)
             ind.my_fitness = fit
 
         # Update the hall of fame with the last individuals generated
@@ -138,60 +141,61 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         if num_generations_no_changes >= 5:
             
             #Clone the best model
-        #    best_model_copy = toolbox.clone(population[0])
+            best_model_copy = toolbox.clone(population[0])
             #Local Search to the best model copy
-        #    new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
+            new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
             #Fitness of the new model
-        #    new_best_model_fitness = toolbox.evaluate(new_best_model)
+            new_best_model_fitness = toolbox.evaluate(new_best_model)
 
             #If the new model is better than the former best model, this is updated
-        #    if new_best_model_fitness[0] > population[0].fitness.values[0]:
-        #        population[0] = new_best_model
-        #        population[0].fitness.values = (new_best_model_fitness[0], )
-        #        population[0].my_fitness = new_best_model_fitness
+            if cmp_accvalParams(best_model_copy, new_best_model, threshold, contadoresNF):
+                population[0] = new_best_model
+                population[0].fitness.values = (new_best_model_fitness[0], )
+                population[0].my_fitness = new_best_model_fitness
 
-        #        if halloffame is not None:
-        #            halloffame.update(population)
+                if halloffame is not None:
+                    halloffame.update(population)
 
             #Else the algorithmn stops
-        #    else:
-            print("MAX GENERATIONS WITH NO CHANGES REACHED. Stopping...")
-            record = stats.compile(population) if stats is not None else {}
-            logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-            if verbose:
-                print(logbook.stream)
-            
-            my_logbook.record(gen=gen, nevals=len(invalid_ind), avg=record["avg"][0], 
-                    acc_train=population[0].my_fitness[2], 
-                    acc_val=population[0].my_fitness[0],
-                    nlayers=population[0].my_fitness[1], 
-                    nparams=population[0].my_fitness[4])
+            else:
+                print("MAX GENERATIONS WITH NO CHANGES REACHED. Stopping...")
+                record = stats.compile(population) if stats is not None else {}
+                logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+                if verbose:
+                    print(logbook.stream)
+                
+                my_logbook.record(gen=gen, nevals=len(invalid_ind), avg=record["avg"][0], 
+                        acc_train=population[0].my_fitness[2], 
+                        acc_val=population[0].my_fitness[0],
+                        nlayers=population[0].my_fitness[1], 
+                        nparams=population[0].my_fitness[4])
 
-            return population, logbook, my_logbook
+                return population, logbook, my_logbook, contadoresNF
 
         # Select the next generation population
-        population[:] = toolbox.select(population + offspring, mu)
+        population[:] = toolbox.select(population + offspring, mu, threshold, contadoresNF) 
 
         ########
         #Local Search
-        #if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
+        if gen == int(ngen * 0.5) or gen == int(ngen * 0.75) or gen == ngen:
             
             #Clone the best model
-        #    best_model_copy = toolbox.clone(population[0])
+            best_model_copy = toolbox.clone(population[0])
             #Local Search to the best model copy
-        #    new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
+            new_best_model = LocalSearch_SolisWets(best_model_copy, max_iter)
             #Fitness of the new model
-        #    new_best_model_fitness = toolbox.evaluate(new_best_model)
+            new_best_model_fitness = toolbox.evaluate(new_best_model)
 
             #If the new model is better than the former best model, this is updated
-        #    if new_best_model_fitness[0] > population[0].fitness.values[0]:
-        #        population[0] = new_best_model
-        #        population[0].fitness.values = (new_best_model_fitness[0], )
-        #        population[0].my_fitness = new_best_model_fitness
+            #if new_best_model_fitness[0] > population[0].fitness.values[0]:
+            if cmp_accvalParams(best_model_copy, new_best_model, threshold, contadoresNF):
+                population[0] = new_best_model
+                population[0].fitness.values = (new_best_model_fitness[0], )
+                population[0].my_fitness = new_best_model_fitness
 
             #Update Hall Of Fame
-        #    if halloffame is not None:
-        #        halloffame.update(population)
+            if halloffame is not None:
+                halloffame.update(population)
             
         ########
 
@@ -222,7 +226,7 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
 
         print("Size of the population is: " + str(len(population)))
 
-    return population, logbook, my_logbook
+    return population, logbook, my_logbook, contadoresNF
 
 
 class GlobalAttributes:
@@ -485,7 +489,7 @@ def LocalSearch_SolisWets(best_model_copy, num_iter=5):
             params_max_list.extend([const_params_max[4], const_params_max[4]])
             params_jump_list.extend([const_params_jump[4], const_params_jump[4]])
 
-            if layer.parameters["strides"] == "null":
+            if layer.parameters["strides"] is None:
                 params_list.append(1)
             else:
                 params_list.append(layer.parameters["strides"][0])
@@ -553,7 +557,7 @@ def LocalSearch_SolisWets(best_model_copy, num_iter=5):
             index_params_list += 2
 
             if params_list[index_params_list] == 1:
-                best_model_copy.net_struct[i].parameters["strides"] = "null"
+                best_model_copy.net_struct[i].parameters["strides"] = None
             else:
                 s = params_list[index_params_list]
                 best_model_copy.net_struct[i].parameters["strides"] = (s, s)
@@ -563,3 +567,35 @@ def LocalSearch_SolisWets(best_model_copy, num_iter=5):
             continue
     
     return best_model_copy
+
+
+
+def cmp_accvalParams(ind1, ind2, threshold, contadores):
+    ind1_accval = ind1.my_fitness[0]
+    ind1_nparams = ind1.my_fitness[4]
+    ind2_accval = ind2.my_fitness[0]
+    ind2_nparams = ind2.my_fitness[4]
+    
+    #Si su precisión en validación es parecida
+    if abs(ind1_accval - ind2_accval) <= threshold:
+        contadores[1] += 1
+        if ind1_nparams < ind2_nparams:
+            return -1
+        elif ind1_nparams > ind2_nparams:
+            return 1
+        else:
+            return 0
+    else:    
+        contadores[0] += 1         
+        if ind1_accval> ind2_accval:
+            return -1
+        elif ind1_accval < ind2_accval:
+            return 1
+        else:
+            return 0
+
+
+def sel_accvalParams(population, k, threshold, contadores):
+    cmp_func = lambda a, b: cmp_accvalParams(a, b, threshold, contadores)
+    return sorted(population, key=cmp_to_key(cmp_func))[:k]
+

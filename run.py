@@ -17,7 +17,7 @@ from deap import creator, base
 from deap import tools
 from KerasExecutor import KerasExecutor
 from Operators import complete_crossover, complete_mutation
-from algorithm import eval_keras, compare_individuals, Individual, eaMuPlusLambdaModified, dummy_eval
+from algorithm import eval_keras, compare_individuals, Individual, eaMuPlusLambdaModified, dummy_eval, sel_accvalParams
 
 import scipy
 #from PIL import Image
@@ -28,7 +28,7 @@ import tensorflow as tf
 tf.config.threading.set_intra_op_parallelism_threads(1)
 tf.config.threading.set_inter_op_parallelism_threads(1)
 
-MAX_GENERATIONS_NO_CHANGES = 2
+MAX_GENERATIONS_NO_CHANGES = 5
 
 """
 EXPERIMENTS:
@@ -39,7 +39,7 @@ EXPERIMENTS:
 - 4: FASHION_MNIST
 """
 
-EXPERIMENT = 4
+EXPERIMENT = 3
 
 #############################################
 # EXTRA CLASSES DEFINITION
@@ -201,6 +201,8 @@ if __name__ == "__main__":
                         help='Ratio of observations for testing')
     parser.add_argument('--parallel', action='store_true',
                         help='Multi-threaded execution')
+    parser.add_argument('--threshold', dest='threshold', default=0.0, type=float,
+                        help='Threshold for the fitness function')
     args = parser.parse_args()
 
     if args.seed != 1652:
@@ -262,7 +264,8 @@ if __name__ == "__main__":
     toolbox.register("mate", complete_crossover, indpb=0.5, config=configuration)
     toolbox.register("mutate", complete_mutation, indpb=0.5,
                      prob_add_remove_layer=args.newpb, config=configuration)
-    toolbox.register("select", tools.selBest)
+    ###toolbox.register("select", tools.selBest)
+    toolbox.register("select", sel_accvalParams)
 
     print("Building population...")
     population = toolbox.population(n=args.lamb)
@@ -282,9 +285,9 @@ if __name__ == "__main__":
         toolbox.register("map", pool.map)
 
     # Running genetic algorithm
-    pop, logbook, my_logbook = eaMuPlusLambdaModified(population=population, toolbox=toolbox, mu=args.mu,
-                                          lambda_=args.lamb, cxpb=args.cxpb,
-                                          mutpb=args.mutpb, ngen=args.ngen, stats=stats, halloffame=hof)
+    pop, logbook, my_logbook, contadoresNF = eaMuPlusLambdaModified(population=population, toolbox=toolbox, mu=args.mu,
+                                          lambda_=args.lamb, cxpb=args.cxpb, mutpb=args.mutpb, ngen=args.ngen, 
+                                          threshold=args.threshold, stats=stats, halloffame=hof)
     print('-------> TERMINADO')
     csv_accuracy = "accuracy_training, accuracy_validation, accuracy_test\n"
     csv_accuracy = "accuracy_training, accuracy_validation, accuracy_test\n"
@@ -320,7 +323,11 @@ if __name__ == "__main__":
     
     with open('my_statistics' + str(execution_id) + '.csv', 'w') as outfile:
         outfile.write(str(my_logbook))
+        outfile.write("\nNº selecciones por precision: " + str(contadoresNF[0]))
+        outfile.write("\nNº selecciones por precision y nº parametros: " + str(contadoresNF[1]))
 
     print("EXECUTION FINISHED, ID: " + str(execution_id))
     print("SEED: " + str(args.seed))
     print("MAX_GENERATIONS_NO_CHANGES: " + str(MAX_GENERATIONS_NO_CHANGES))
+    print("THRESHOLD: " + str(args.threshold))
+    print("MU :" + str(args.mu))
