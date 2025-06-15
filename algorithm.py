@@ -23,9 +23,7 @@ def eval_keras(individual, ke):
     my_ke = deepcopy(ke)
 
     metrics_names, scores_training, scores_validation, scores_test, model = my_ke.execute(individual)
-    ###print("hasf: ", metrics_names)
     
-    ###CAMBIO: compile_metrics 2.18, accuracy 2.15
     accuracy_training = scores_training[metrics_names.index("compile_metrics")]
     accuracy_validation = scores_validation[metrics_names.index("compile_metrics")]
     accuracy_test = scores_test[metrics_names.index("compile_metrics")]
@@ -92,7 +90,7 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, 
                       acc_val=population[0].my_fitness[0],
                       nlayers=population[0].my_fitness[1], 
                       nparams=population[0].my_fitness[4])
-    ###
+
     prev_avg = record["avg"]
 
 
@@ -127,7 +125,6 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, 
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
-            #ind.fitness.values = (fit[0], fit[4])
             ind.fitness.values = (fit[0],)
             ind.my_fitness = fit
 
@@ -174,6 +171,7 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, 
 
         # Select the next generation population
         population[:] = toolbox.select(population + offspring, mu, threshold, contadoresNF) 
+        print(population[0])
 
         ########
         #Local Search
@@ -187,7 +185,6 @@ def eaMuPlusLambdaModified(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, 
             new_best_model_fitness = toolbox.evaluate(new_best_model)
 
             #If the new model is better than the former best model, this is updated
-            #if new_best_model_fitness[0] > population[0].fitness.values[0]:
             if cmp_accvalParams(best_model_copy, new_best_model, threshold, contadoresNF):
                 population[0] = new_best_model
                 population[0].fitness.values = (new_best_model_fitness[0], )
@@ -569,14 +566,15 @@ def LocalSearch_SolisWets(best_model_copy, num_iter=5):
     return best_model_copy
 
 
-
+#Método de comparación utilizado por la nueva función de selección
 def cmp_accvalParams(ind1, ind2, threshold, contadores):
     ind1_accval = ind1.my_fitness[0]
     ind1_nparams = ind1.my_fitness[4]
     ind2_accval = ind2.my_fitness[0]
     ind2_nparams = ind2.my_fitness[4]
     
-    #Si su precisión en validación es parecida
+    #Si su precisión en validación es parecida, también se considera el número
+    #de parámetros de los modelos
     if abs(ind1_accval - ind2_accval) <= threshold:
         contadores[1] += 1
         if ind1_nparams < ind2_nparams:
@@ -594,7 +592,7 @@ def cmp_accvalParams(ind1, ind2, threshold, contadores):
         else:
             return 0
 
-
+#Nueva función de selección utilizada por el algoritmo
 def sel_accvalParams(population, k, threshold, contadores):
     cmp_func = lambda a, b: cmp_accvalParams(a, b, threshold, contadores)
     return sorted(population, key=cmp_to_key(cmp_func))[:k]

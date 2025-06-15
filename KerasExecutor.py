@@ -24,7 +24,6 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import tensorflow as tf
 
-tf.config.set_visible_devices([], 'GPU')
 print("Dispositivos disponibles:", tf.config.list_physical_devices('GPU'))
 
 gpus = tf.config.list_physical_devices('GPU')
