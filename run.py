@@ -17,14 +17,18 @@ from deap import creator, base
 from deap import tools
 from KerasExecutor import KerasExecutor
 from Operators import complete_crossover, complete_mutation
-from algorithm import eval_keras, compare_individuals, Individual, eaMuPlusLambdaModified, dummy_eval
+from algorithm import eval_keras, compare_individuals, Individual, eaMuPlusLambdaModified, dummy_eval, sel_accvalParams
 
 import scipy
-from PIL import Image
+#from PIL import Image
 import keras as keras
-from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img
+import tensorflow as tf
+#from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img
 
-MAX_GENERATIONS_NO_CHANGES = 3
+tf.config.threading.set_intra_op_parallelism_threads(1)
+tf.config.threading.set_inter_op_parallelism_threads(1)
+
+MAX_GENERATIONS_NO_CHANGES = 5
 
 """
 EXPERIMENTS:
@@ -32,9 +36,10 @@ EXPERIMENTS:
 - 1: HORSEHUMAN-G
 - 2: VANGOGH-G
 - 3: CIFAR10-G
+- 4: FASHION_MNIST
 """
 
-EXPERIMENT = 0
+EXPERIMENT = 3
 
 #############################################
 # EXTRA CLASSES DEFINITION
@@ -77,63 +82,11 @@ def mnist_data_builder():
         "DESCR": "mldata.org dataset: mnist-original",
     }
 
-    #print(dataset)
-    #print("\n\n")
-    #print(dataset["data"])
-    #print("\n\n")
-    #print(dataset["target"])
-    #print("\n\n")
-    #print(dataset["data"][1])
-
     return dataset
 
 
 ###########################
 def horsehumanG_data_builder():
-    
-    horsehumanG_path = "./horse-or-human"
-
-    # Cargar imágenes y etiquetas
-    dataset_dir = os.path.join(os.path.dirname(horsehumanG_path), 'horse-or-human')
-    classes = sorted(os.listdir(dataset_dir))  # Clases: ['horses', 'humans']
-    
-    images = []
-    labels = []
-    
-    for label, class_name in enumerate(classes):
-        class_dir = os.path.join(dataset_dir, class_name)
-        for img_name in os.listdir(class_dir):
-            img_path = os.path.join(class_dir, img_name)
-            
-            # Cargar imagen en escala de grises
-            img = load_img(img_path, color_mode="grayscale", target_size=(64,64)) ###Original 300x300
-            img_array = img_to_array(img)
-            
-            images.append(img_array)
-            labels.append(label)
-    
-    # Convertir listas a arrays numpy
-    images = numpy.array(images).reshape(len(images), -1)  # Aplanar imágenes
-    labels = numpy.array(labels)
-    
-    # Guardar en archivo .mat
-    mat_data = {"data": images, "target": labels}
-    scipy.io.savemat("horsehumanG.mat", mat_data)
-    
-    print("Dataset guardado como horsehumanG.mat")
-    
-    #dataset = mat_data
-
-    #print(dataset)
-    #print("\n\n")
-    #print(dataset["data"])
-    #print("\n\n")
-    #print(dataset["target"])
-    #print("\n\n")
-    #print(dataset["data"][1])
-
-    
-    #return mat_data
 
     horsehumanG_path = "./horsehumanG.mat"
     horsehumanG_raw = loadmat(horsehumanG_path)
@@ -144,52 +97,12 @@ def horsehumanG_data_builder():
         "DESCR": "",
     }
 
-    #print(dataset)
-    #print("\n\n")
-    #print(dataset["data"])
-    #print("\n\n")
-    #print(dataset["target"])
-    #print("\n\n")
-    #print(dataset["data"][1])
-
     return dataset
-
 ###########################
 
 
 ###########################
 def vangoghG_data_builder():
-    
-    vangoghG_path = "./vangogh-or-photo"
-
-    # Cargar imágenes y etiquetas
-    dataset_dir = os.path.join(os.path.dirname(vangoghG_path), 'vangogh-or-photo')
-    classes = sorted(os.listdir(dataset_dir))  # Clases: ['vangogh', 'photo']
-    
-    images = []
-    labels = []
-    
-    for label, class_name in enumerate(classes):
-        class_dir = os.path.join(dataset_dir, class_name)
-        for img_name in os.listdir(class_dir):
-            img_path = os.path.join(class_dir, img_name)
-            
-            # Cargar imagen en escala de grises
-            img = load_img(img_path, color_mode="grayscale", target_size=(28,28)) ###Original 256x256
-            img_array = img_to_array(img)
-            
-            images.append(img_array)
-            labels.append(label)
-    
-    # Convertir listas a arrays numpy
-    images = numpy.array(images).reshape(len(images), -1)  # Aplanar imágenes
-    labels = numpy.array(labels)
-    
-    # Guardar en archivo .mat
-    mat_data = {"data": images, "target": labels}
-    scipy.io.savemat("vangoghG.mat", mat_data)
-    
-    print("Dataset guardado como vangoghG.mat")
 
     vangoghG_path = "./vangoghG.mat"
     vangoghG_raw = loadmat(vangoghG_path)
@@ -200,42 +113,15 @@ def vangoghG_data_builder():
         "DESCR": "",
     }
 
-
     return dataset
 ###########################
 
-#############################
+
+###########################
 def cifar10G_data_builder():
 
-    cifar10 = keras.datasets.cifar10
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-
-    #print("Original x_train shape:", x_train.shape)  # (50000, 32, 32, 3)
-
-    # Convertir imágenes a escala de grises y aplanarlas
-    images = []
-    for img in x_train:
-        img_gray = Image.fromarray(img).convert("L")  # Convertir a escala de grises
-        img_resized = img_gray.resize((28, 28))  # Redimensionar a 28x28
-        img_array = numpy.array(img_resized).astype(numpy.uint8)  # Convertir a array sin dimensiones extra
-        images.append(img_array.flatten())  # Aplanar y agregar a la lista
-
-    # Convertir listas a numpy arrays
-    images = numpy.array(images).reshape(len(images), -1)  # Aplanar imágenes
-    labels = y_train.flatten()  # Asegurar que las etiquetas sean un array 1D
-
-    #print("Nuevo shape imágenes:", images.shape)  # (50000, 1024)
-
-    # Guardar en archivo .mat
-    mat_data = {"data": images, "target": labels}
-    scipy.io.savemat("cifar10G.mat", mat_data)
-
-    #print(" Dataset guardado como 'cifar10G.mat'")
-
-    # Cargar dataset para validación
-    cifar10G_path = "./cifar10G.mat"
+    cifar10G_path = "./cifar10G32.mat"
     cifar10G_raw = loadmat(cifar10G_path)
-
     dataset = {
         "data": cifar10G_raw["data"],
         "target": cifar10G_raw["target"][0],
@@ -243,12 +129,22 @@ def cifar10G_data_builder():
         "DESCR": "",
     }
 
-    #print(" Dataset cargado correctamente y listo para usar.")
+    return dataset
+#############################
 
+#############################
+def fashion_mnist_data_builder():
+
+    fashion_mnist_path = "./fashion_mnist.mat"
+    fashion_mnist_raw = loadmat(fashion_mnist_path)
+    dataset = {
+        "data": fashion_mnist_raw["data"],
+        "target": fashion_mnist_raw["target"][0],
+        "COL_NAMES": ["label", "data"],
+        "DESCR": "",
+    }
 
     return dataset
-
-
 #############################
 
 
@@ -270,7 +166,7 @@ def timing(_):
 def get_string_parameters():
 
     output_string = ""
-    output_string += "Dataset: " + "MNIST" + "\n"
+    output_string += "Dataset: " + "CIFAR10-G" + "\n"
     output_string += "Test size: " + str(test_size) + "\n"
     output_string += "Early stopping patience: " + str(early_stopping_patience) + "\n"
     output_string += "Loss: " + loss + "\n"
@@ -305,9 +201,14 @@ if __name__ == "__main__":
                         help='Ratio of observations for testing')
     parser.add_argument('--parallel', action='store_true',
                         help='Multi-threaded execution')
+    parser.add_argument('--threshold', dest='threshold', default=0.0, type=float,
+                        help='Threshold for the fitness function')
     args = parser.parse_args()
 
-
+    if args.seed != 1652:
+        random.seed(args.seed)
+        numpy.random.seed(args.seed)
+        tf.random.set_seed(args.seed)
 
     dataset = None
     if EXPERIMENT == 0:
@@ -322,12 +223,16 @@ if __name__ == "__main__":
     elif EXPERIMENT == 3:
         print ("EXPERIMENT WITH CIFAR10-G DATASET")
         dataset = cifar10G_data_builder()
+    elif EXPERIMENT == 4:
+        print ("EXPERIMENT WITH FASHION_MNIST DATASET")
+        dataset = fashion_mnist_data_builder()
     else:
         print("EXPERIMENT NOT IMPLEMENTED!")
 
     execution_id = time.time()
 
     print("EXECUTION ID: " + str(execution_id))
+    print("SEED: " + str(args.seed))
 
     # Loading parameters file
     configuration = Configuration(args.paramFile)
@@ -341,6 +246,7 @@ if __name__ == "__main__":
     creator.create("Individual", Individual, fitness=creator.FitnessMax)
 
     toolbox = base.Toolbox()
+
 
     #####################
 
@@ -358,7 +264,8 @@ if __name__ == "__main__":
     toolbox.register("mate", complete_crossover, indpb=0.5, config=configuration)
     toolbox.register("mutate", complete_mutation, indpb=0.5,
                      prob_add_remove_layer=args.newpb, config=configuration)
-    toolbox.register("select", tools.selBest)
+    ###toolbox.register("select", tools.selBest)
+    toolbox.register("select", sel_accvalParams)
 
     print("Building population...")
     population = toolbox.population(n=args.lamb)
@@ -378,9 +285,9 @@ if __name__ == "__main__":
         toolbox.register("map", pool.map)
 
     # Running genetic algorithm
-    pop, logbook = eaMuPlusLambdaModified(population=population, toolbox=toolbox, mu=args.mu,
-                                          lambda_=args.lamb, cxpb=args.cxpb,
-                                          mutpb=args.mutpb, ngen=args.ngen, stats=stats, halloffame=hof)
+    pop, logbook, my_logbook, contadoresNF = eaMuPlusLambdaModified(population=population, toolbox=toolbox, mu=args.mu,
+                                          lambda_=args.lamb, cxpb=args.cxpb, mutpb=args.mutpb, ngen=args.ngen, 
+                                          threshold=args.threshold, stats=stats, halloffame=hof)
     print('-------> TERMINADO')
     csv_accuracy = "accuracy_training, accuracy_validation, accuracy_test\n"
     csv_accuracy = "accuracy_training, accuracy_validation, accuracy_test\n"
@@ -389,7 +296,7 @@ if __name__ == "__main__":
 
     # Generating results
     for index, individual in enumerate(hof):
-        accuracy_validation, number_layers, accuracy_training, accuracy_test = individual.my_fitness
+        accuracy_validation, number_layers, accuracy_training, accuracy_test, _ = individual.my_fitness
 
         file_individuals += "New individual: " + str(index) + "\n"
         file_individuals += "ACC_TRAINING {} ACC_VALIDATION {} ACC_TEST {} NUMBER_LAYERS {}\n\n".format(
@@ -413,5 +320,14 @@ if __name__ == "__main__":
 
     with open('statistics' + str(execution_id) + '.txt', 'w') as outfile:
         outfile.write(str(logbook))
+    
+    with open('my_statistics' + str(execution_id) + '.csv', 'w') as outfile:
+        outfile.write(str(my_logbook))
+        outfile.write("\nNº selecciones por precision: " + str(contadoresNF[0]))
+        outfile.write("\nNº selecciones por precision y nº parametros: " + str(contadoresNF[1]))
 
     print("EXECUTION FINISHED, ID: " + str(execution_id))
+    print("SEED: " + str(args.seed))
+    print("MAX_GENERATIONS_NO_CHANGES: " + str(MAX_GENERATIONS_NO_CHANGES))
+    print("THRESHOLD: " + str(args.threshold))
+    print("MU :" + str(args.mu))

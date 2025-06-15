@@ -24,23 +24,16 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import tensorflow as tf
 
-tf.config.set_visible_devices([], 'GPU')
+print("Dispositivos disponibles:", tf.config.list_physical_devices('GPU'))
 
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
-    print(f"Se ha detectado una GPU: {gpus}")  # Corrección en la impresión
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
 
-    # Configura el crecimiento de memoria dinámico para evitar que use toda la RAM de golpe
-    #tf.config.experimental.set_memory_growth(gpus[0], True)
-
-    # Limita la memoria de la GPU a 4GB
-    #tf.config.set_logical_device_configuration(
-     #   gpus[0],
-     #   [tf.config.LogicalDeviceConfiguration(memory_limit=4096)]
-    #)
-
-else:
-    print("No se ha detectado ninguna GPU, se usará CPU.")
 
 
 class KerasExecutor:
@@ -77,8 +70,10 @@ class KerasExecutor:
 
 
         #print(str(individual.toString))
+        #train, test, target_train, target_test = train_test_split(self.x, self.y_hot_encoding, test_size=self.test_size,
+        #                                                          random_state=int(time.time()))
         train, test, target_train, target_test = train_test_split(self.x, self.y_hot_encoding, test_size=self.test_size,
-                                                                  random_state=int(time.time()))
+                                                                  random_state=42)
 
         model = Sequential()
 
@@ -103,7 +98,10 @@ class KerasExecutor:
                 pool_size = (min(layer.parameters['pool_size'][0], model.output_shape[1]),
                              min(layer.parameters['pool_size'][1], model.output_shape[2]))
 
-                model.add(MaxPooling2D(pool_size=pool_size, strides=layer.parameters['strides']))
+                if layer.parameters['strides'] is None:
+                    model.add(MaxPooling2D(pool_size=pool_size, strides=(1,1)))
+                else:
+                    model.add(MaxPooling2D(pool_size=pool_size, strides=layer.parameters['strides']))
 
             elif layer.type == "Reshape":
 
@@ -130,7 +128,7 @@ class KerasExecutor:
 
         # Train validation split
         train, validation, target_train, target_validation = train_test_split(train, target_train, test_size=0.2,
-                                                                              random_state=int(time.time()))
+                                                                              random_state=42)
 
         model.compile(loss=self.loss, optimizer=individual.global_attributes.optimizer, metrics=self.metrics)
 

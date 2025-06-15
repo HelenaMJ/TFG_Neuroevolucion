@@ -110,7 +110,7 @@
           "type" : "range"
         },
         "batch_size": {
-          "values" : [100, 5000, 100],
+          "values" : [100, 2000, 100],
           "type" : "range"
         },
         "number_layers": {
